@@ -80,7 +80,7 @@ const PickingOrderListPage = () => {
         if (!assignedUsername) return <span className="text-slate-400">-</span>;
         
         const userObj = users.find(u => {
-          const uName = (u as any).username || u.userName;
+          const uName = (u as any).userName || u.username;
           return uName?.toLowerCase() === assignedUsername.toLowerCase();
         });
         
@@ -203,14 +203,14 @@ const PickingOrderListPage = () => {
             loading={isLoadingUsers}
             optionLabelProp="label"
             options={users.map(u => {
-              const usernameVal = (u as any).username || u.userName;
+              const usernameVal = (u as any).userName || u.username;
               return {
                 value: usernameVal,
                 label: u.fullName || usernameVal,
               };
             })}
             optionRender={(option) => {
-              const userObj = users.find(u => ((u as any).username || u.userName) === option.value);
+              const userObj = users.find(u => ((u as any).userName || u.username) === option.value);
               return (
                 <div className="flex flex-col py-0.5">
                   <span className="font-medium text-slate-800">{userObj?.fullName || option.value}</span>
