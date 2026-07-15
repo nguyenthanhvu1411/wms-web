@@ -25,27 +25,27 @@ export const financeApi = {
   },
 
   getPaymentRequests: async (params: any) => {
-    const res = await httpClient.get<any, ApiResponse<PagedResponse<PaymentRequest>>>('/api/finance/payments', { params });
+    const res = await httpClient.get<any, ApiResponse<PagedResponse<PaymentRequest>>>('/api/finance/payment-requests', { params });
     return unwrapResult(res);
   },
 
   getPaymentRequestById: async (id: number) => {
-    const res = await httpClient.get<any, ApiResponse<PaymentRequest>>(`/api/finance/payments/${id}`);
+    const res = await httpClient.get<any, ApiResponse<PaymentRequest>>(`/api/finance/payment-requests/${id}`);
     return unwrapResult(res);
   },
 
   approvePaymentRequest: async (id: number, data: ApprovePaymentRequestRequest) => {
-    const res = await httpClient.post<any, ApiResponse<any>>(`/api/finance/payments/${id}/approve`, data);
+    const res = await httpClient.post<any, ApiResponse<any>>(`/api/finance/payment-requests/${id}/approve`, data);
     return unwrapResult(res);
   },
 
   processPayment: async (id: number, data: ProcessPaymentRequest) => {
-    const res = await httpClient.post<any, ApiResponse<any>>(`/api/finance/payments/${id}/process`, data);
+    const res = await httpClient.post<any, ApiResponse<any>>(`/api/finance/payment-requests/${id}/pay`, data);
     return unwrapResult(res);
   },
 
   cancelPaymentRequest: async (id: number, data: CancelPaymentRequestRequest) => {
-    const res = await httpClient.post<any, ApiResponse<any>>(`/api/finance/payments/${id}/cancel`, data);
+    const res = await httpClient.post<any, ApiResponse<any>>(`/api/finance/payment-requests/${id}/cancel`, data);
     return unwrapResult(res);
   }
 };

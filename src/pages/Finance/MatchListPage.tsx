@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { inboundApi } from '@/api/inboundApi';
 import { DataTable, type Column } from '@/components/DataTable/DataTable';
 import { AdvancedFilter } from '@/components/AdvancedFilter/AdvancedFilter';
 import { StatusBadge } from '@/components/StatusBadge/StatusBadge';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { PermissionGuard } from '@/components/PermissionGuard/PermissionGuard';
 import type { ThreeWayMatchResponse } from '@/types/inbound';
@@ -31,6 +32,36 @@ const MatchListPage = () => {
     fromDate?: string;
     toDate?: string;
   }>({});
+
+  const queryClient = useQueryClient();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [invoiceCode, setInvoiceCode] = useState('');
+
+  const matchMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const res = await inboundApi.getVendorInvoices({ search: code });
+      const invoice = res.items?.find((i: any) => i.invoiceNumber === code);
+      if (!invoice) throw new Error(`Không tìm thấy hóa đơn có mã: ${code}`);
+      return inboundApi.runThreeWayMatch(invoice.id);
+    },
+    onSuccess: () => {
+      toast.success('Chạy đối chiếu thành công');
+      setIsModalOpen(false);
+      setInvoiceCode('');
+      queryClient.invalidateQueries({ queryKey: ['threeWayMatches'] });
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || 'Lỗi khi chạy đối chiếu');
+    }
+  });
+
+  const handleRunMatch = () => {
+    if (!invoiceCode) {
+      toast.error('Vui lòng nhập Mã Hóa Đơn');
+      return;
+    }
+    matchMutation.mutate(invoiceCode.trim());
+  };
 
   const { data: queryData, isLoading, isError } = useQuery({
     queryKey: ['threeWayMatches', pageIndex, filters],
@@ -99,7 +130,9 @@ const MatchListPage = () => {
           <p className="text-text-secondary mt-1">Đối chiếu Phiếu mua – Phiếu nhận hàng – Hóa đơn nhà cung cấp</p>
         </div>
         <PermissionGuard permissions="Finance.RunMatch">
-          <button className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors flex items-center gap-2">
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors flex items-center gap-2">
             <ShieldCheck size={18} /> CHẠY ĐỐI CHIẾU
           </button>
         </PermissionGuard>
@@ -157,6 +190,46 @@ const MatchListPage = () => {
         onPageChange={setPageIndex}
         isLoading={isLoading}
       />
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="flex justify-between items-center p-4 border-b border-slate-200">
+              <h2 className="text-lg font-semibold text-slate-800">Chạy Đối Chiếu (3-Way Match)</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Mã Hóa Đơn (VD: INV-...)</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  value={invoiceCode}
+                  onChange={(e) => setInvoiceCode(e.target.value)}
+                  placeholder="Nhập mã hóa đơn cần đối chiếu"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-4 border-t border-slate-200 bg-slate-50 rounded-b-lg">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleRunMatch}
+                disabled={matchMutation.isPending}
+                className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-hover disabled:opacity-50 transition-colors flex items-center gap-2"
+              >
+                {matchMutation.isPending ? 'Đang chạy...' : 'Xác nhận'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

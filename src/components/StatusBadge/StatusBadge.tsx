@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-type StatusType = 'Draft' | 'Submitted' | 'Approved' | 'Pending' | 'InProgress' | 'Completed' | 'Cancelled' | 'Passed' | 'Failed' | 'Partial' | 'OnHold' | 'Delivered' | 'Active' | 'Inactive';
+type StatusType = 'Draft' | 'Submitted' | 'Approved' | 'Pending' | 'InProgress' | 'Completed' | 'Cancelled' | 'Passed' | 'Failed' | 'Partial' | 'OnHold' | 'Delivered' | 'Active' | 'Inactive' | 'Locked' | 'Full';
 
 const statusConfig: Record<StatusType, { label: string; className: string }> = {
   Draft: { label: 'Nháp', className: 'bg-slate-100 text-slate-700 border-slate-200' },
@@ -17,7 +17,9 @@ const statusConfig: Record<StatusType, { label: string; className: string }> = {
   OnHold: { label: 'Tạm giữ', className: 'bg-warning/10 text-warning border-warning/20' },
   Delivered: { label: 'Đã giao', className: 'bg-success/10 text-success border-success/20' },
   Active: { label: 'Đang hoạt động', className: 'bg-success/10 text-success border-success/20' },
-  Inactive: { label: 'Ngừng hoạt động', className: 'bg-slate-100 text-slate-600 border-slate-200' }
+  Inactive: { label: 'Ngừng hoạt động', className: 'bg-slate-100 text-slate-600 border-slate-200' },
+  Locked: { label: 'Đã khóa', className: 'bg-danger/10 text-danger border-danger/20' },
+  Full: { label: 'Đã đầy', className: 'bg-warning/10 text-warning border-warning/20' }
 };
 
 export const StatusBadge = ({ status, className, text }: { status: string; className?: string, text?: string }) => {

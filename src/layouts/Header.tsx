@@ -42,8 +42,10 @@ const Header = () => {
               {user?.fullName?.charAt(0) || 'U'}
             </div>
             <div className="hidden md:block">
-              <p className="text-sm font-semibold text-text-primary">{user?.fullName || 'Người dùng'}</p>
-              <p className="text-xs text-text-muted">{user?.role === 1 ? 'Admin' : 'Staff'}</p>
+              <p className="text-sm font-semibold text-text-primary">
+                {user?.fullName || 'Người dùng'} {user?.username && `(${user.username})`}
+              </p>
+              <p className="text-xs text-text-muted">{user?.email || (user?.role === 1 ? 'Admin' : 'Staff')}</p>
             </div>
           </button>
 

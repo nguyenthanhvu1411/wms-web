@@ -73,7 +73,7 @@ const LocationFormPage = () => {
         aisle: location.aisle || '',
         rack: location.rack || '',
         bin: location.bin || '',
-        type: location.type || 1,
+        type: Number(location.type) || 1,
         maxVolumeM3: location.maxVolumeM3 || 0,
         maxWeightKg: location.maxWeightKg || 0,
         allowMixedProducts: location.allowMixedProducts,
@@ -82,17 +82,6 @@ const LocationFormPage = () => {
       });
     }
   }, [location, reset]);
-
-  const handleGenerateCode = () => {
-    const parts = [watchZone, watchAisle, watchRack, watchBin].filter(Boolean);
-    if (parts.length === 0) {
-      toast.error('Vui lòng nhập ít nhất một thông tin Zone, Aisle, Rack, hoặc Bin để sinh mã');
-      return;
-    }
-    const newCode = parts.join('-');
-    setValue('code', newCode.toUpperCase(), { shouldValidate: true });
-    toast.success(`Đã sinh mã: ${newCode.toUpperCase()}`);
-  };
 
   const printLabelMutation = useMutation({
     mutationFn: (locationId: number) => masterDataApi.getLocationLabel(locationId),
@@ -178,13 +167,11 @@ const LocationFormPage = () => {
               <AutoCodeInput 
                 label="Mã vị trí (Code)" 
                 prefix="LOC-" 
-                isManual={true} 
                 value={watchCode}
-                onChange={(val) => setValue('code', val.toUpperCase(), { shouldValidate: true })}
-                onGenerate={handleGenerateCode}
+                onChange={(e) => setValue('code', e.target.value.toUpperCase(), { shouldValidate: true })}
                 error={errors.code?.message}
               />
-              <p className="text-xs text-text-muted mt-1">Nhập tay mã vị trí hoặc điền thông tin Zone/Aisle/Rack/Bin và bấm nút cây đũa phép để sinh mã tự động.</p>
+              <p className="text-xs text-text-muted mt-1">Vui lòng nhập mã vị trí.</p>
             </div>
 
             <div>
@@ -207,11 +194,14 @@ const LocationFormPage = () => {
                 {...register('type', { valueAsNumber: true })}
                 className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
               >
-                <option value={1}>Lưu trữ (Storage)</option>
-                <option value={2}>Lấy hàng (Picking)</option>
-                <option value={3}>Nhận hàng (Receiving)</option>
-                <option value={4}>Xuất hàng (Shipping)</option>
-                <option value={5}>Chờ xử lý (Staging)</option>
+                <option value={1}>Kệ hàng thông thường (Rack)</option>
+                <option value={2}>Vị trí sàn (Floor)</option>
+                <option value={3}>Khu vực chuẩn bị (Staging)</option>
+                <option value={4}>Khu vực nhận hàng (Receiving)</option>
+                <option value={5}>Khu vực xuất hàng (Shipping)</option>
+                <option value={6}>Khu vực cách ly (Quarantine)</option>
+                <option value={7}>Khu vực hàng hư hỏng (Damaged)</option>
+                <option value={8}>Khu cross-docking (CrossDock)</option>
               </select>
             </div>
 

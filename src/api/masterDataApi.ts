@@ -41,6 +41,10 @@ export const masterDataApi = {
   // ==========================================
   // PRODUCTS
   // ==========================================
+  getProductStatuses: async () => {
+    const res = await httpClient.get<any, ApiResponse<Array<{ id: string, name: string }>>>('/api/system/enums/product-statuses');
+    return res.data;
+  },
   getProducts: async (params: any) => {
     const res = await httpClient.get<any, ApiResponse<PaginatedData<Product>>>('/api/products', { params });
     return res.data;

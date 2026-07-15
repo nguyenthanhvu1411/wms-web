@@ -25,7 +25,8 @@ const LocationListPage = () => {
 
   const toggleStatusMutation = useMutation({
     mutationFn: (location: Location) => {
-      if (location.status === 1) { // 1 is active, 0 is inactive/locked based on typical enums (or 1 active, 2 locked). Let's use lockLocation
+      // 1: Active, 2: Locked, 3: Inactive, 4: Full
+      if (location.status === 1 || location.status === 'Active') { 
         return masterDataApi.lockLocation(location.id);
       }
       return masterDataApi.unlockLocation(location.id);
@@ -55,7 +56,14 @@ const LocationListPage = () => {
     },
     { 
       header: 'Trạng thái', 
-      cell: (item: Location) => <StatusBadge status={item.status === 1 ? 'Active' : 'Inactive'} />
+      cell: (item: Location) => {
+        let statusText = 'Inactive';
+        if (item.status === 1 || item.status === 'Active') statusText = 'Active';
+        else if (item.status === 2 || item.status === 'Locked') statusText = 'Locked';
+        else if (item.status === 3 || item.status === 'Inactive') statusText = 'Inactive';
+        else if (item.status === 4 || item.status === 'Full') statusText = 'Full';
+        return <StatusBadge status={statusText} />;
+      }
     },
     {
       header: 'Thao Tác',
@@ -71,10 +79,10 @@ const LocationListPage = () => {
 
           <button 
             onClick={() => toggleStatusMutation.mutate(item)}
-            className={`p-1.5 rounded transition-colors ${item.status === 1 ? 'text-text-secondary hover:bg-slate-100' : 'text-danger hover:bg-danger/10'}`} 
-            title={item.status === 1 ? "Khóa vị trí" : "Mở khóa vị trí"}
+            className={`p-1.5 rounded transition-colors ${item.status === 1 || item.status === 'Active' ? 'text-text-secondary hover:bg-slate-100' : 'text-success hover:bg-success/10'}`} 
+            title={item.status === 1 || item.status === 'Active' ? "Khóa vị trí" : "Mở khóa vị trí"}
           >
-            {item.status === 1 ? <Lock size={18} /> : <Unlock size={18} />}
+            {item.status === 1 || item.status === 'Active' ? <Lock size={18} /> : <Unlock size={18} />}
           </button>
         </div>
       ),

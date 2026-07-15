@@ -1,11 +1,14 @@
 export interface User {
   id: number;
-  userName: string;
+  username: string;
   email: string;
   fullName: string;
-  roles: string[];
+  phone?: string;
+  role: string;
   isActive: boolean;
   isLocked: boolean;
+  assignedWarehouseId?: number;
+  assignedWarehouseName?: string;
   lastLoginAt?: string;
   createdAt: string;
 }
@@ -35,4 +38,27 @@ export interface SystemSetting {
   isEditable: boolean;
   updatedAt?: string;
   updatedBy?: string;
+}
+
+export interface Notification {
+  id: number;
+  uuid: string;
+  userId?: number;
+  title: string;
+  content: string;
+  type: number; // 0: Info, 1: Success, 2: Warning, 3: Error
+  isRead: boolean;
+  readAt?: string;
+  actionUrl?: string;
+  referenceType?: string;
+  referenceId?: number;
+  createdAt: string;
+  expiresAt?: string;
+}
+
+export interface UpdateSystemSettingRequest {
+  value?: string;
+  description?: string;
+  dataType?: string;
+  scope?: number;
 }

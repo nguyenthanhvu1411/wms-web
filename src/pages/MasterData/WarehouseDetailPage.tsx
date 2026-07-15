@@ -46,7 +46,7 @@ const WarehouseDetailPage = () => {
     { header: 'Chứa (Kg)', accessorKey: 'currentWeightKg' as keyof Location, className: 'text-right' },
     { header: 'Sức chứa (Kg)', accessorKey: 'maxWeightKg' as keyof Location, className: 'text-right' },
     { header: 'Đã chiếm dụng', cell: (item: Location) => item.isOccupied ? <span className="text-warning font-medium">Có</span> : <span className="text-success font-medium">Trống</span> },
-    { header: 'Trạng thái', cell: (item: Location) => <StatusBadge status={item.status === 1 ? 'Active' : 'Inactive'} /> },
+    { header: 'Trạng thái', cell: (item: Location) => <StatusBadge status={item.status === 1 || item.status === 'Active' ? 'Active' : 'Inactive'} /> },
   ];
 
   return (

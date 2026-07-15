@@ -14,7 +14,7 @@ export interface Product {
   countryOfOrigin?: string;
   costPrice: number;
   salePrice: number;
-  stockPolicy: number;
+  stockPolicy: number | string;
   trackSerialNumber: boolean;
   trackLot: boolean;
   trackExpiry: boolean;
@@ -28,7 +28,7 @@ export interface Product {
   requiresQualityInspection: boolean;
   isPurchasable: boolean;
   isSellable: boolean;
-  status: number;
+  status: number | string;
   barcodes?: ProductBarcode[];
 }
 
@@ -88,7 +88,7 @@ export interface Warehouse {
   id: number;
   code: string;
   name: string;
-  type: number;
+  type: number | string;
   address?: string;
   city?: string;
   province?: string;
@@ -114,8 +114,8 @@ export interface Location {
   aisle?: string;
   rack?: string;
   bin?: string;
-  type: number;
-  status: number;
+  type: number | string;
+  status: number | string;
   maxVolumeM3: number;
   maxWeightKg: number;
   currentWeightKg: number;

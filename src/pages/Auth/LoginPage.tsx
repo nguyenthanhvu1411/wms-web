@@ -44,7 +44,15 @@ const LoginPage = () => {
       });
 
       if (res.success && res.data) {
-        setAuth(res.data.user, res.data.accessToken, res.data.refreshToken);
+        const user = {
+          id: res.data.userId.toString() || '0',
+          username: res.data.userName || '',
+          email: res.data.email || '',
+          fullName: res.data.fullName || '',
+          role: res.data.roles?.includes('Admin') ? 1 : 2,
+          permissions: res.data.permissions || []
+        };
+        setAuth(user, res.data.accessToken || '', res.data.refreshToken || '');
         toast.success('Đăng nhập thành công!');
         navigate('/dashboard');
       } else {

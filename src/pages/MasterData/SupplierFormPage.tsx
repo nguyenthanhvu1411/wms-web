@@ -10,6 +10,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AutoCodeInput } from '@/components/AutoCodeInput/AutoCodeInput';
 
 const schema = z.object({
+  code: z.string().min(1, 'Vui lòng nhập mã nhà cung cấp'),
   name: z.string().min(1, 'Vui lòng nhập tên nhà cung cấp'),
   taxCode: z.string().optional(),
   contactPerson: z.string().optional(),
@@ -44,6 +45,7 @@ const SupplierFormPage = () => {
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      code: '',
       name: '',
       currency: 'VND',
       paymentTermsDays: 0,
@@ -54,6 +56,7 @@ const SupplierFormPage = () => {
   useEffect(() => {
     if (supplier) {
       reset({
+        code: supplier.code || '',
         name: supplier.name || '',
         taxCode: supplier.taxCode || '',
         contactPerson: supplier.contactPerson || '',
@@ -137,7 +140,7 @@ const SupplierFormPage = () => {
         <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
           <h2 className="text-base font-bold text-text-primary mb-4 pb-2 border-b border-border">Thông tin cơ bản</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <AutoCodeInput label="Mã nhà cung cấp" isManual={false} value={supplier?.code} />
+            <AutoCodeInput label="Mã nhà cung cấp" {...register('code')} error={errors.code?.message} />
 
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1.5">Tên nhà cung cấp <span className="text-danger">*</span></label>

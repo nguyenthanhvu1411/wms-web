@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inboundApi } from '@/api/inboundApi';
+import { masterDataApi } from '@/api/masterDataApi';
 import { ArrowLeft, Save, Plus, DollarSign } from 'lucide-react';
 import { message, Spin } from 'antd';
 import { StatusBadge } from '@/components/StatusBadge/StatusBadge';
@@ -19,6 +20,11 @@ const VendorInvoiceFormPage = () => {
     queryKey: ['vendorInvoice', invoiceId],
     queryFn: () => inboundApi.getVendorInvoiceById(invoiceId),
     enabled: isViewMode
+  });
+
+  const { data: suppliersData } = useQuery({
+    queryKey: ['suppliers'],
+    queryFn: () => masterDataApi.getSuppliers({ pageSize: 1000 })
   });
 
   const createMutation = useMutation({
@@ -155,14 +161,20 @@ const VendorInvoiceFormPage = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Supplier ID</label>
-            <input
-              type="number"
+            <label className="block text-sm font-medium text-slate-700 mb-1">Nhà cung cấp</label>
+            <select
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:bg-slate-100 disabled:text-slate-500"
               value={formData.supplierId || ''}
               onChange={e => setFormData({ ...formData, supplierId: Number(e.target.value) })}
               disabled={isViewMode}
-            />
+            >
+              <option value="">-- Chọn nhà cung cấp --</option>
+              {suppliersData?.items?.map((supplier: any) => (
+                <option key={supplier.id} value={supplier.id}>
+                  {supplier.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Số PO / ASN liên kết</label>

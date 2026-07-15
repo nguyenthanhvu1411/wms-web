@@ -10,6 +10,7 @@ import { AutoCodeInput } from '@/components/AutoCodeInput/AutoCodeInput';
 import type { Uom } from '@/types/masterData';
 
 const schema = z.object({
+  code: z.string().min(1, 'Vui lòng nhập mã ĐVT'),
   name: z.string().min(1, 'Vui lòng nhập tên ĐVT'),
   symbol: z.string().min(1, 'Vui lòng nhập ký hiệu'),
   isBase: z.boolean(),
@@ -49,6 +50,7 @@ export const UomFormModal: React.FC<Props> = ({ isOpen, onClose, uom, uoms }) =>
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      code: '',
       name: '',
       symbol: '',
       isBase: true,
@@ -64,6 +66,7 @@ export const UomFormModal: React.FC<Props> = ({ isOpen, onClose, uom, uoms }) =>
     if (isOpen) {
       if (isEdit && uom) {
         reset({
+          code: uom.code || '',
           name: uom.name || '',
           symbol: uom.symbol || '',
           isBase: uom.isBase,
@@ -73,6 +76,7 @@ export const UomFormModal: React.FC<Props> = ({ isOpen, onClose, uom, uoms }) =>
         });
       } else {
         reset({
+          code: '',
           name: '',
           symbol: '',
           isBase: true,
@@ -134,7 +138,7 @@ export const UomFormModal: React.FC<Props> = ({ isOpen, onClose, uom, uoms }) =>
         <div className="p-4 overflow-y-auto custom-scrollbar flex-1">
           <form id="uom-form" onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
             
-            <AutoCodeInput label="Mã ĐVT" isManual={false} value={uom?.code} />
+            <AutoCodeInput label="Mã ĐVT" {...register('code')} error={errors.code?.message} />
 
             <div className="grid grid-cols-2 gap-4">
               <div>

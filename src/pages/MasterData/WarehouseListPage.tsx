@@ -40,7 +40,18 @@ const WarehouseListPage = () => {
   const columns = [
     { header: 'Mã Kho', accessorKey: 'code' as keyof Warehouse, className: 'font-mono text-primary font-medium' },
     { header: 'Tên Kho', accessorKey: 'name' as keyof Warehouse, className: 'font-medium text-text-primary' },
-    { header: 'Quản lý', accessorKey: 'managerName' as keyof Warehouse },
+    { 
+      header: 'Loại kho', 
+      cell: (item: Warehouse) => {
+        let typeStr = '';
+        if (item.type === 1 || item.type === 'Standard') typeStr = 'Kho tiêu chuẩn';
+        else if (item.type === 2 || item.type === 'ColdStorage') typeStr = 'Kho lạnh';
+        else if (item.type === 3 || item.type === 'Bonded') typeStr = 'Kho ngoại quan';
+        else if (item.type === 4 || item.type === 'Distribution') typeStr = 'Kho phân phối';
+        else if (item.type === 5 || item.type === 'Virtual') typeStr = 'Kho ảo';
+        return <span className="text-sm">{typeStr}</span>;
+      }
+    },
     { header: 'Thành phố', accessorKey: 'city' as keyof Warehouse },
     { header: 'Số Vị trí', accessorKey: 'locationCount' as keyof Warehouse, className: 'text-right' },
     { header: 'Tồn kho', accessorKey: 'totalStockQuantity' as keyof Warehouse, className: 'text-right font-medium' },

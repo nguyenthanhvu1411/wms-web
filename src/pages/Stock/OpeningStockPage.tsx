@@ -19,6 +19,7 @@ const schema = z.object({
   unitCost: z.number().min(0, 'Đơn giá không hợp lệ'),
   lotNumber: z.string().optional(),
   expiryDate: z.string().optional(),
+  serialNumbers: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -28,6 +29,10 @@ const OpeningStockPage = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+  const [trackLot, setTrackLot] = useState(false);
+  const [trackExpiry, setTrackExpiry] = useState(false);
+  const [trackSerial, setTrackSerial] = useState(false);
 
   const { register, control, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -46,6 +51,13 @@ const OpeningStockPage = () => {
         // Also auto-fill the UOM
         setValue('uomId', productData.uomId, { shouldValidate: true });
       }
+      setTrackLot(!!productData.trackLot);
+      setTrackExpiry(!!productData.trackExpiry);
+      setTrackSerial(!!productData.serialTrackingEnabled || !!productData.trackSerialNumber);
+    } else {
+      setTrackLot(false);
+      setTrackExpiry(false);
+      setTrackSerial(false);
     }
   };
 
@@ -68,6 +80,7 @@ const OpeningStockPage = () => {
       ...data,
       lotNumber: data.lotNumber || null,
       expiryDate: data.expiryDate || null,
+      serialNumbers: data.serialNumbers ? data.serialNumbers.split(',').map(s => s.trim()).filter(s => s) : [],
       notes: data.notes || null,
     };
     mutation.mutate(payload);
@@ -175,24 +188,43 @@ const OpeningStockPage = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1.5">Số Lô (Lot)</label>
-                <input 
-                  type="text" 
-                  {...register('lotNumber')}
-                  className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors" 
-                />
+            {(trackLot || trackExpiry) && (
+              <div className="grid grid-cols-2 gap-4">
+                {trackLot && (
+                  <div>
+                    <label className="block text-sm font-medium text-text-primary mb-1.5">Số Lô (Lot)</label>
+                    <input 
+                      type="text" 
+                      {...register('lotNumber')}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors" 
+                    />
+                  </div>
+                )}
+                {trackExpiry && (
+                  <div>
+                    <label className="block text-sm font-medium text-text-primary mb-1.5">Hạn SD (Expiry)</label>
+                    <input 
+                      type="date" 
+                      {...register('expiryDate')}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors" 
+                    />
+                  </div>
+                )}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-1.5">Hạn SD (Expiry)</label>
-                <input 
-                  type="date" 
-                  {...register('expiryDate')}
+            )}
+
+            {trackSerial && (
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-text-primary mb-1.5">Số Seri (Serial Numbers)</label>
+                <textarea 
+                  {...register('serialNumbers')}
+                  placeholder="Nhập các số seri cách nhau bằng dấu phẩy (,)"
                   className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors" 
-                />
+                  rows={2} 
+                ></textarea>
+                <p className="text-xs text-text-secondary mt-1">Số lượng seri nhập vào phải bằng số lượng sản phẩm nhập kho.</p>
               </div>
-            </div>
+            )}
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-text-primary mb-1.5">Ghi chú</label>

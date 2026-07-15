@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import { Save, X, ArrowLeft } from 'lucide-react';
 
 const productSchema = z.object({
+  sku: z.string().min(1, 'Vui lòng nhập mã sản phẩm'),
   name: z.string().min(1, 'Vui lòng nhập tên sản phẩm'),
   categoryId: z.number().min(1, 'Vui lòng chọn danh mục'),
   uomId: z.number().min(1, 'Vui lòng chọn ĐVT'),
@@ -19,7 +20,7 @@ const productSchema = z.object({
   trackSerialNumber: z.boolean(),
   trackExpiry: z.boolean(),
   requiresQualityInspection: z.boolean(),
-  stockPolicy: z.number(),
+  stockPolicy: z.string(),
   minStockLevel: z.number().min(0),
   reorderPoint: z.number().min(0),
   isPurchasable: z.boolean(),
@@ -61,12 +62,13 @@ const ProductFormPage = () => {
       trackSerialNumber: false,
       trackExpiry: false,
       requiresQualityInspection: false,
-      stockPolicy: 1, // FIFO by default
+      stockPolicy: 'FIFO', // FIFO by default
       minStockLevel: 0,
       reorderPoint: 0,
       isPurchasable: true,
       isSellable: true,
       defaultBarcode: '',
+      sku: '',
     }
   });
 
@@ -82,23 +84,25 @@ const ProductFormPage = () => {
         trackSerialNumber: product.trackSerialNumber || false,
         trackExpiry: product.trackExpiry || false,
         requiresQualityInspection: product.requiresQualityInspection || false,
-        stockPolicy: product.stockPolicy || 1,
+        stockPolicy: product.stockPolicy ? String(product.stockPolicy) : 'FIFO',
         minStockLevel: product.minStockLevel || 0,
         reorderPoint: product.reorderPoint || 0,
         isPurchasable: product.isPurchasable ?? true,
         isSellable: product.isSellable ?? true,
         description: product.description || '',
         defaultBarcode: product.defaultBarcode || '',
+        sku: product.sku || '',
       });
     }
   }, [product, reset]);
 
   const mutation = useMutation<any, any, ProductForm>({
     mutationFn: (data: ProductForm) => {
+      const payload = isEdit && product ? { ...product, ...data } : data;
       if (isEdit) {
-        return masterDataApi.updateProduct(Number(id), data);
+        return masterDataApi.updateProduct(Number(id), payload);
       }
-      return masterDataApi.createProduct(data);
+      return masterDataApi.createProduct(payload);
     },
     onSuccess: () => {
       toast.success(isEdit ? 'Cập nhật sản phẩm thành công!' : 'Tạo sản phẩm thành công!');
@@ -121,8 +125,8 @@ const ProductFormPage = () => {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pb-20">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={() => navigate(-1)}
             className="p-2 hover:bg-background rounded-lg text-text-secondary transition-colors"
           >
@@ -135,14 +139,14 @@ const ProductFormPage = () => {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button 
+          <button
             type="button"
             onClick={() => navigate(-1)}
             className="px-4 py-2 bg-background border border-border text-text-secondary font-medium rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-2"
           >
             <X size={18} /> Hủy bỏ
           </button>
-          <button 
+          <button
             type="submit"
             disabled={mutation.isPending}
             className="px-4 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary-hover transition-colors flex items-center gap-2 disabled:opacity-70"
@@ -159,12 +163,12 @@ const ProductFormPage = () => {
             <h2 className="text-lg font-semibold text-text-primary mb-4 border-b border-border pb-2">Thông tin cơ bản</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="md:col-span-2">
-                <AutoCodeInput prefix="SKU-" isManual={false} value={product?.sku} />
+                <AutoCodeInput label="Mã sản phẩm (SKU)" {...register('sku')} error={errors.sku?.message} />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-text-primary mb-1.5">Tên sản phẩm <span className="text-danger">*</span></label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   {...register('name')}
                   className={`w-full px-4 py-2 bg-background border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors ${errors.name ? 'border-danger focus:border-danger' : 'border-border focus:border-primary'}`}
                   placeholder="Nhập tên sản phẩm"
@@ -174,17 +178,17 @@ const ProductFormPage = () => {
 
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-text-primary mb-1.5">Barcode / Mã vạch</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   {...register('defaultBarcode')}
                   className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                   placeholder="Nhập mã vạch sản phẩm (nếu có)"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-1.5">Danh mục <span className="text-danger">*</span></label>
-                <select 
+                <select
                   {...register('categoryId', { valueAsNumber: true })}
                   className={`w-full px-4 py-2 bg-background border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors ${errors.categoryId ? 'border-danger focus:border-danger' : 'border-border focus:border-primary'}`}
                 >
@@ -198,7 +202,7 @@ const ProductFormPage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-1.5">Đơn vị tính <span className="text-danger">*</span></label>
-                <select 
+                <select
                   {...register('uomId', { valueAsNumber: true })}
                   className={`w-full px-4 py-2 bg-background border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors ${errors.uomId ? 'border-danger focus:border-danger' : 'border-border focus:border-primary'}`}
                 >
@@ -212,7 +216,7 @@ const ProductFormPage = () => {
 
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-text-primary mb-1.5">Mô tả</label>
-                <textarea 
+                <textarea
                   {...register('description')}
                   rows={4}
                   className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
@@ -228,16 +232,16 @@ const ProductFormPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-1.5">Giá bán (VND)</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   {...register('salePrice', { valueAsNumber: true })}
                   className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-right"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-1.5">Giá vốn (VND)</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   {...register('costPrice', { valueAsNumber: true })}
                   className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors text-right"
                 />
@@ -264,13 +268,14 @@ const ProductFormPage = () => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-1.5">Chính sách xuất kho</label>
-                <select 
-                  {...register('stockPolicy', { valueAsNumber: true })}
+                <select
+                  {...register('stockPolicy')}
                   className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                 >
-                  <option value={1}>FIFO (Vào trước - Ra trước)</option>
-                  <option value={2}>FEFO (Hết hạn trước - Ra trước)</option>
-                  <option value={3}>LIFO (Vào sau - Ra trước)</option>
+                  <option value="FIFO">FIFO (Vào trước - Ra trước)</option>
+                  <option value="FEFO">FEFO (Hết hạn trước - Ra trước)</option>
+                  <option value="LIFO">LIFO (Vào sau - Ra trước)</option>
+                  <option value="FEFO_FIFO">FEFO ưu tiên, fallback FIFO</option>
                 </select>
               </div>
 
@@ -301,16 +306,16 @@ const ProductFormPage = () => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-1.5">Mức tồn tối thiểu (Min Stock)</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   {...register('minStockLevel', { valueAsNumber: true })}
                   className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-1.5">Điểm đặt hàng lại (Reorder Point)</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   {...register('reorderPoint', { valueAsNumber: true })}
                   className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                 />

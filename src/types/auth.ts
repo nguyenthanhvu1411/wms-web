@@ -12,8 +12,13 @@ export type AuthUser = {
 export type LoginResponse = {
   accessToken: string;
   refreshToken: string;
-  expiresIn: number;
-  user: AuthUser;
+  expiresAt: string;
+  userId: number;
+  userName: string;
+  email: string;
+  fullName: string;
+  roles: string[];
+  permissions: string[];
 };
 
 export type RefreshTokenRequest = {

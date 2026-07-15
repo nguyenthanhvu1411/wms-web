@@ -10,6 +10,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AutoCodeInput } from '@/components/AutoCodeInput/AutoCodeInput';
 
 const schema = z.object({
+  code: z.string().min(1, 'Vui lòng nhập mã kho'),
   name: z.string().min(1, 'Vui lòng nhập tên kho'),
   type: z.number().int(),
   address: z.string().optional(),
@@ -40,6 +41,7 @@ const WarehouseFormPage = () => {
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      code: '',
       name: '',
       type: 1, // 1: Main, 2: Branch, 3: Virtual
       totalAreaM2: 0,
@@ -50,8 +52,9 @@ const WarehouseFormPage = () => {
   useEffect(() => {
     if (warehouse) {
       reset({
+        code: warehouse.code || '',
         name: warehouse.name || '',
-        type: warehouse.type || 1,
+        type: Number(warehouse.type) || 1,
         address: warehouse.address || '',
         city: warehouse.city || '',
         province: warehouse.province || '',
@@ -129,7 +132,7 @@ const WarehouseFormPage = () => {
         <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
           <h2 className="text-base font-bold text-text-primary mb-4 pb-2 border-b border-border">Thông tin chung</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <AutoCodeInput label="Mã kho" prefix="WH-" isManual={false} value={warehouse?.code} />
+            <AutoCodeInput label="Mã kho" {...register('code')} error={errors.code?.message} />
 
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1.5">Tên kho <span className="text-danger">*</span></label>
@@ -147,9 +150,11 @@ const WarehouseFormPage = () => {
                 {...register('type', { valueAsNumber: true })}
                 className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
               >
-                <option value={1}>Kho chính (Main)</option>
-                <option value={2}>Kho chi nhánh (Branch)</option>
-                <option value={3}>Kho ảo (Virtual)</option>
+                <option value={1}>Kho tiêu chuẩn (Standard)</option>
+                <option value={2}>Kho lạnh (ColdStorage)</option>
+                <option value={3}>Kho ngoại quan (Bonded)</option>
+                <option value={4}>Kho phân phối (Distribution)</option>
+                <option value={5}>Kho ảo (Virtual)</option>
               </select>
             </div>
 
@@ -177,7 +182,7 @@ const WarehouseFormPage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1.5">Quận / Huyện</label>
+              <label className="block text-sm font-medium text-text-primary mb-1.5">Phường / Xã</label>
               <input 
                 {...register('province')}
                 className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"

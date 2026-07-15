@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { AutoCodeInput } from '@/components/AutoCodeInput/AutoCodeInput';
 
 const schema = z.object({
+  code: z.string().min(1, 'Vui lòng nhập mã danh mục'),
   name: z.string().min(1, 'Vui lòng nhập tên danh mục'),
   description: z.string().optional(),
   parentId: z.number().nullable().optional(),
@@ -32,6 +33,7 @@ export const CategoryFormModal: React.FC<Props> = ({ isOpen, onClose, category, 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      code: '',
       name: '',
       description: '',
       parentId: null,
@@ -44,6 +46,7 @@ export const CategoryFormModal: React.FC<Props> = ({ isOpen, onClose, category, 
     if (isOpen) {
       if (isEdit && category) {
         reset({
+          code: category.code || '',
           name: category.name || '',
           description: category.description || '',
           parentId: category.parentId || null,
@@ -52,6 +55,7 @@ export const CategoryFormModal: React.FC<Props> = ({ isOpen, onClose, category, 
         });
       } else {
         reset({
+          code: '',
           name: '',
           description: '',
           parentId: null,
@@ -101,7 +105,7 @@ export const CategoryFormModal: React.FC<Props> = ({ isOpen, onClose, category, 
         <div className="p-4 overflow-y-auto custom-scrollbar flex-1">
           <form id="category-form" onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
             
-            <AutoCodeInput label="Mã danh mục" isManual={false} value={category?.code} />
+            <AutoCodeInput label="Mã danh mục" {...register('code')} error={errors.code?.message} />
 
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1.5">Tên danh mục <span className="text-danger">*</span></label>

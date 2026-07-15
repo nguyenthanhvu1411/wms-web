@@ -25,11 +25,16 @@ const ProductListPage = () => {
     queryFn: () => masterDataApi.getCategories({ pageIndex: 1, pageSize: 100 }),
   });
 
+  const { data: productStatusesData } = useQuery({
+    queryKey: ['productStatuses'],
+    queryFn: () => masterDataApi.getProductStatuses(),
+  });
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ['products', pageIndex, pageSize, searchTerm, statusFilter, categoryFilter],
-    queryFn: () => masterDataApi.getProducts({ 
-      pageIndex, 
-      pageSize, 
+    queryFn: () => masterDataApi.getProducts({
+      pageIndex,
+      pageSize,
       search: searchTerm,
       status: statusFilter,
       categoryId: categoryFilter || undefined
@@ -38,7 +43,7 @@ const ProductListPage = () => {
 
   const toggleStatusMutation = useMutation({
     mutationFn: (product: Product) => {
-      if (product.status === 1) {
+      if (product.status === 1 || (product.status as unknown as string) === 'Active') {
         return masterDataApi.discontinueProduct(product.id);
       }
       return masterDataApi.activateProduct(product.id);
@@ -92,7 +97,7 @@ const ProductListPage = () => {
       const toastId = toast.loading('Đang xử lý file import...');
       const res = await masterDataApi.importProducts(file);
       toast.dismiss(toastId);
-      
+
       if (res.data?.errors?.length > 0) {
         toast.error(`Import ${res.data.successCount} thành công. Cảnh báo: ${res.data.errors.length} lỗi. Vui lòng xem logs.`);
         console.warn('Import Errors:', res.data.errors);
@@ -151,12 +156,16 @@ const ProductListPage = () => {
     {
       header: 'Trạng Thái',
       cell: (item: Product) => {
-        const statusMap: Record<number, string> = {
-          1: 'Active',
-          2: 'Inactive',
-          3: 'Pending'
-        };
-        return <StatusBadge status={statusMap[item.status] || 'Unknown'} />;
+        const backendStatus = String(item.status);
+        const statusItem = productStatusesData?.find(s => String(s.id) === backendStatus);
+        const text = statusItem?.name || 'Không xác định';
+
+        let mappedStatus = 'Unknown';
+        if (backendStatus === '1' || backendStatus === 'Active') mappedStatus = 'Active';
+        else if (backendStatus === '2' || backendStatus === 'Discontinued') mappedStatus = 'Inactive';
+        else if (backendStatus === '3' || backendStatus === 'Pending') mappedStatus = 'Pending';
+        
+        return <StatusBadge status={mappedStatus} text={text} />;
       },
     },
     {
@@ -164,22 +173,22 @@ const ProductListPage = () => {
       className: 'text-right',
       cell: (item: Product) => (
         <div className="flex justify-end gap-2">
-          <button 
+          <button
             onClick={(e) => { e.stopPropagation(); navigate(`/master-data/products/${item.id}`); }}
             className="p-1.5 text-info hover:bg-info/10 rounded transition-colors"
             title="Xem chi tiết"
           >
             <Eye size={18} />
           </button>
-          <button 
+          <button
             onClick={(e) => { e.stopPropagation(); navigate(`/master-data/products/${item.id}/edit`); }}
             className="p-1.5 text-warning hover:bg-warning/10 rounded transition-colors"
             title="Sửa"
           >
             <Edit size={18} />
           </button>
-          {item.status === 1 ? (
-            <button 
+          {item.status === 1 || item.status === 'Active' ? (
+            <button
               onClick={(e) => { e.stopPropagation(); toggleStatusMutation.mutate(item); }}
               className="p-1.5 text-danger hover:bg-danger/10 rounded transition-colors"
               title="Ngừng KD"
@@ -187,7 +196,7 @@ const ProductListPage = () => {
               <PowerOff size={18} />
             </button>
           ) : (
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); toggleStatusMutation.mutate(item); }}
               className="p-1.5 text-success hover:bg-success/10 rounded transition-colors"
               title="Kích hoạt"
@@ -208,14 +217,14 @@ const ProductListPage = () => {
           <p className="text-text-secondary mt-1">Quản lý danh sách hàng hóa và vật tư trong hệ thống</p>
         </div>
         <div className="flex gap-2 items-center">
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleImport} 
-            accept=".xlsx" 
-            className="hidden" 
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImport}
+            accept=".xlsx"
+            className="hidden"
           />
-          <button 
+          <button
             onClick={handleDownloadTemplate}
             className="bg-slate-100 text-slate-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors flex items-center gap-2 border border-slate-300"
             title="Tải bản mẫu (Template) có hướng dẫn để nhập dữ liệu"
@@ -223,21 +232,21 @@ const ProductListPage = () => {
             <FileText size={18} />
             Bản Mẫu
           </button>
-          <button 
+          <button
             onClick={() => fileInputRef.current?.click()}
             className="bg-success text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-success-hover transition-colors flex items-center gap-2"
           >
             <Upload size={18} />
             Import
           </button>
-          <button 
+          <button
             onClick={handleExport}
             className="bg-info text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-info-hover transition-colors flex items-center gap-2"
           >
             <Download size={18} />
             Export
           </button>
-          <button 
+          <button
             onClick={() => navigate('/master-data/products/create')}
             className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors flex items-center gap-2 ml-2"
           >
@@ -247,8 +256,8 @@ const ProductListPage = () => {
         </div>
       </div>
 
-      <AdvancedFilter 
-        onSearch={setSearchTerm} 
+      <AdvancedFilter
+        onSearch={setSearchTerm}
         onClear={() => {
           setSearchTerm('');
           setStatusFilter('');
@@ -257,20 +266,20 @@ const ProductListPage = () => {
       >
         <div>
           <label className="block text-sm font-medium text-text-primary mb-1.5">Trạng thái</label>
-          <select 
+          <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
           >
             <option value="">Tất cả</option>
-            <option value="1">Đang hoạt động</option>
-            <option value="2">Ngừng kinh doanh</option>
-            <option value="3">Chờ duyệt</option>
+            {productStatusesData?.map((status) => (
+              <option key={status.id} value={status.id}>{status.name}</option>
+            ))}
           </select>
         </div>
         <div>
           <label className="block text-sm font-medium text-text-primary mb-1.5">Danh mục</label>
-          <select 
+          <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"

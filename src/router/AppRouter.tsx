@@ -66,6 +66,8 @@ import CycleCountDetailPage from '@/pages/CycleCounts/CycleCountDetailPage';
 import VendorInvoiceListPage from '@/pages/Finance/VendorInvoiceListPage';
 import UserManagementPage from '@/pages/System/UserManagementPage';
 import AuditLogPage from '@/pages/System/AuditLogPage';
+import SettingsPage from '@/pages/System/SettingsPage';
+import NotificationsPage from '@/pages/System/NotificationsPage';
 import VendorInvoiceFormPage from '@/pages/Finance/VendorInvoiceFormPage';
 import MatchListPage from '@/pages/Finance/MatchListPage';
 import PaymentRequestListPage from '@/pages/Finance/PaymentRequestListPage';
@@ -500,6 +502,14 @@ const router = createBrowserRouter([
               {
                 path: 'audit',
                 element: <AuditLogPage />
+              },
+              {
+                path: 'settings',
+                element: <SettingsPage />
+              },
+              {
+                path: 'notifications',
+                element: <NotificationsPage />
               }
             ]
           }
