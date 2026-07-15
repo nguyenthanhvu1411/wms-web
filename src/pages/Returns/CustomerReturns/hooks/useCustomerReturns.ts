@@ -153,3 +153,19 @@ export const useCompleteCustomerReturn = () => {
     },
   });
 };
+
+export const useCloseCustomerReturn = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => operationsApi.closeReturnOrder(id),
+    onSuccess: (data, id) => {
+      message.success('Đã đóng phiếu hoàn trả (Closed)');
+      queryClient.invalidateQueries({ queryKey: returnsKeys.customer.list() });
+      queryClient.invalidateQueries({ queryKey: returnsKeys.customer.detail(id) });
+    },
+    onError: (error: any) => {
+      message.error(error.message || 'Lỗi khi đóng phiếu hoàn trả');
+    },
+  });
+};

@@ -572,9 +572,17 @@ const CustomerReturnFormPage = () => {
                       <td className="px-4 py-3 text-right text-sm font-medium text-emerald-600">
                         {line.amount ? line.amount.toLocaleString('vi-VN') : '0'} đ
                       </td>
-                      <td className="px-4 py-3 text-sm text-slate-600">
-                        {isViewMode ? (line.lotNumber || '—') : (
-                           <input type="text" className="w-[120px] px-2 py-1 border border-slate-300 rounded text-xs" value={line.lotNumber || ''} onChange={e => handleUpdateLine(index, 'lotNumber', e.target.value)} placeholder="Nhập Lot..." />
+                      <td className="px-4 py-3 text-sm text-slate-600 flex gap-1 items-center">
+                        {isViewMode ? (
+                          <div className="flex flex-col">
+                             <span className="font-medium">{line.lotNumber || '—'}</span>
+                             {line.expiryDate && <span className="text-xs text-slate-400">{new Date(line.expiryDate).toLocaleDateString('vi-VN')}</span>}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-1">
+                             <input type="text" className="w-[120px] px-2 py-1 border border-slate-300 rounded text-xs" value={line.lotNumber || ''} onChange={e => handleUpdateLine(index, 'lotNumber', e.target.value)} placeholder="Nhập Lot..." />
+                             <input type="date" className="w-[120px] px-2 py-1 border border-slate-300 rounded text-xs" value={line.expiryDate ? new Date(line.expiryDate).toISOString().split('T')[0] : ''} onChange={e => handleUpdateLine(index, 'expiryDate', e.target.value ? new Date(e.target.value).toISOString() : undefined)} title="Hạn sử dụng" />
+                          </div>
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm">

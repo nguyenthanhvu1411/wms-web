@@ -313,7 +313,7 @@ const CycleCountFormPage = () => {
               }
               options={users.map((u: any) => ({
                 value: u.id?.toString(),
-                label: `${u.employeeCode || u.code || u.userCode || u.userName} - ${u.fullName || u.name || u.displayName || u.userName}`
+                label: `${u.username} - ${u.fullName}`
               }))}
             />
             {errors.assignedTo && <p className="text-red-500 text-xs mt-1">{errors.assignedTo}</p>}

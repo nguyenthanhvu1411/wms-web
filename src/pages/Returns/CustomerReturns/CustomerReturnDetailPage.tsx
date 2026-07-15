@@ -8,7 +8,8 @@ import {
   useCancelCustomerReturn,
   useReceiveCustomerReturn, 
   useInspectCustomerReturn, 
-  useCompleteCustomerReturn 
+  useCompleteCustomerReturn,
+  useCloseCustomerReturn 
 } from './hooks/useCustomerReturns';
 import { useQueries } from '@tanstack/react-query';
 import { masterDataApi } from '@/api/masterDataApi';
@@ -32,6 +33,7 @@ const CustomerReturnDetailPage = () => {
   const approveMutation = useApproveCustomerReturn();
   const rejectMutation = useRejectCustomerReturn();
   const cancelMutation = useCancelCustomerReturn();
+  const closeMutation = useCloseCustomerReturn();
 
   // Fetch product masterdata
   const productIds = Array.from(new Set(returnOrder?.lines?.map((l: any) => l.productId) || []));
@@ -54,21 +56,17 @@ const CustomerReturnDetailPage = () => {
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [receiveData, setReceiveData] = useState<Record<number, number>>({});
-  const [inspectData, setInspectData] = useState<Record<number, any>>({});
 
   if (isLoading) return <div className="p-8 text-center text-slate-500">Đang tải...</div>;
   if (!returnOrder) return <div className="p-8 text-center text-slate-500">Không tìm thấy phiếu hoàn trả.</div>;
 
+  const status = returnOrder.status;
   const steps: TimelineStep[] = [
-    { status: 1, label: 'Tạo phiếu', isCompleted: returnOrder.status >= ReturnStatus.Draft, timestamp: returnOrder.createdAt || null, actor: 'System', duration: null, isCurrent: returnOrder.status === ReturnStatus.Draft, isFailed: false },
-    { status: 2, label: 'Chờ duyệt', isCompleted: returnOrder.status >= ReturnStatus.Submitted, timestamp: null, actor: null, duration: null, isCurrent: returnOrder.status === ReturnStatus.Submitted, isFailed: false },
-    { status: 3, label: 'Đã duyệt', isCompleted: returnOrder.status >= ReturnStatus.Approved, timestamp: null, actor: null, duration: null, isCurrent: returnOrder.status === ReturnStatus.Approved, isFailed: false },
-    { status: 4, label: 'Đang nhận', isCompleted: returnOrder.status >= ReturnStatus.Receiving, timestamp: null, actor: null, duration: null, isCurrent: returnOrder.status === ReturnStatus.Receiving, isFailed: false },
-    { status: 5, label: 'Đang QC', isCompleted: returnOrder.status >= ReturnStatus.QC, timestamp: returnOrder.inspectedAt || null, actor: 'QC Admin', duration: null, isCurrent: returnOrder.status === ReturnStatus.QC, isFailed: false },
-    { status: 6, label: 'Xử lý lỗi', isCompleted: returnOrder.status >= ReturnStatus.Disposition, timestamp: null, actor: null, duration: null, isCurrent: returnOrder.status === ReturnStatus.Disposition, isFailed: false },
-    { status: 7, label: 'Cất hàng', isCompleted: returnOrder.status >= ReturnStatus.Putaway, timestamp: null, actor: null, duration: null, isCurrent: returnOrder.status === ReturnStatus.Putaway, isFailed: false },
-    { status: 8, label: 'Hoàn thành', isCompleted: returnOrder.status >= ReturnStatus.Completed, timestamp: null, actor: null, duration: null, isCurrent: returnOrder.status === ReturnStatus.Completed, isFailed: false },
-    { status: 9, label: 'Đã đóng', isCompleted: returnOrder.status >= ReturnStatus.Closed, timestamp: null, actor: null, duration: null, isCurrent: returnOrder.status === ReturnStatus.Closed, isFailed: false },
+    { status: 1, label: 'Lập phiếu', isCompleted: status !== ReturnStatus.Draft, timestamp: returnOrder.createdAt || null, actor: 'System', duration: null, isCurrent: status === ReturnStatus.Draft, isFailed: false },
+    { status: 2, label: 'Chờ duyệt', isCompleted: status !== ReturnStatus.Draft && status !== ReturnStatus.Submitted, timestamp: null, actor: null, duration: null, isCurrent: status === ReturnStatus.Submitted, isFailed: false },
+    { status: 3, label: 'Đã duyệt', isCompleted: status !== ReturnStatus.Draft && status !== ReturnStatus.Submitted && status !== ReturnStatus.Approved, timestamp: null, actor: null, duration: null, isCurrent: status === ReturnStatus.Approved, isFailed: false },
+    { status: 4, label: 'Chờ nhận', isCompleted: status === ReturnStatus.Completed || status === ReturnStatus.Closed, timestamp: null, actor: null, duration: null, isCurrent: status === ReturnStatus.Receiving, isFailed: false },
+    { status: 5, label: 'Hoàn thành', isCompleted: status === ReturnStatus.Completed || status === ReturnStatus.Closed, timestamp: null, actor: null, duration: null, isCurrent: status === ReturnStatus.Completed, isFailed: false },
   ];
 
   const handleOpenReceiveModal = () => {
@@ -90,45 +88,6 @@ const CustomerReturnDetailPage = () => {
     });
   };
 
-  const handleOpenInspectModal = () => {
-    const initialData: Record<number, any> = {};
-    returnOrder.lines?.forEach(line => {
-      initialData[line.id] = {
-        qtySellable: line.qtyReceived,
-        qtyQuarantined: 0,
-        qtyDamaged: 0,
-        qtyScrapped: 0,
-      };
-    });
-    setInspectData(initialData);
-    setIsInspectModalOpen(true);
-  };
-
-  const handleSubmitInspect = () => {
-    let hasError = false;
-    const lines = Object.entries(inspectData).map(([lineId, data]) => {
-      const line = returnOrder.lines?.find(l => l.id === Number(lineId));
-      const totalAllocated = (data.qtySellable || 0) + (data.qtyQuarantined || 0) + (data.qtyDamaged || 0) + (data.qtyScrapped || 0);
-      if (line && totalAllocated !== line.qtyReceived) {
-        message.error(`Sản phẩm ${line.productSku}: Tổng QC phân bổ (${totalAllocated}) phải BẰNG số lượng đã nhận (${line.qtyReceived})`);
-        hasError = true;
-      }
-      return {
-        returnOrderLineId: Number(lineId),
-        qtySellable: data.qtySellable || 0,
-        qtyQuarantined: data.qtyQuarantined || 0,
-        qtyDamaged: data.qtyDamaged || 0,
-        qtyScrapped: data.qtyScrapped || 0,
-      };
-    });
-
-    if (hasError) return;
-
-    inspectMutation.mutate({ id: returnId, data: { lines } }, {
-      onSuccess: () => setIsInspectModalOpen(false)
-    });
-  };
-
   const handleComplete = () => {
     Modal.confirm({
       title: 'Hoàn thành phiếu hoàn trả?',
@@ -137,6 +96,18 @@ const CustomerReturnDetailPage = () => {
       cancelText: 'Hủy',
       onOk: () => {
         completeMutation.mutate(returnId);
+      }
+    });
+  };
+
+  const handleClose = () => {
+    Modal.confirm({
+      title: 'Đóng phiếu hoàn trả?',
+      content: 'Phiếu đã hoàn thành sẽ được đóng lại và không thể thay đổi nữa.',
+      okText: 'Xác nhận đóng',
+      cancelText: 'Hủy',
+      onOk: () => {
+        closeMutation.mutate(returnId);
       }
     });
   };
@@ -254,7 +225,7 @@ const CustomerReturnDetailPage = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {returnOrder.lines?.map((line) => (
+            {returnOrder.lines?.map((line: any) => (
               <tr key={line.id} className="hover:bg-slate-50/50">
                 <td className="px-6 py-3 font-medium text-slate-800">{line.productSku}</td>
                 <td className="px-6 py-3 text-sm text-slate-600">
@@ -279,46 +250,6 @@ const CustomerReturnDetailPage = () => {
                 <td colSpan={9} className="px-6 py-8 text-center text-slate-500">Không có dữ liệu sản phẩm</td>
               </tr>
             )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
-  const renderQCAllocations = () => (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase font-medium">
-              <th className="px-6 py-3">Sản phẩm</th>
-              <th className="px-6 py-3 text-right">Đã nhận</th>
-              <th className="px-6 py-3 text-center text-green-700">Sellable</th>
-              <th className="px-6 py-3 text-center text-orange-700">Quarantined</th>
-              <th className="px-6 py-3 text-center text-red-700">Damaged</th>
-              <th className="px-6 py-3 text-center text-slate-700">Scrapped</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {returnOrder.lines?.map((line) => (
-              <tr key={line.id} className="hover:bg-slate-50/50">
-                <td className="px-6 py-3">
-                  <div className="font-medium text-slate-800">{line.productSku}</div>
-                  <div className="text-xs text-slate-500">{line.productName || '—'}</div>
-                </td>
-                <td className="px-6 py-3 text-right font-medium">{line.qtyReceived || 0}</td>
-                {returnOrder.inspectedAt ? (
-                  <>
-                    <td className="px-6 py-3 text-center font-bold text-green-600 bg-green-50/30">{line.qtySellable || 0}</td>
-                    <td className="px-6 py-3 text-center font-bold text-orange-600 bg-orange-50/30">{line.qtyQuarantined || 0}</td>
-                    <td className="px-6 py-3 text-center font-bold text-red-600 bg-red-50/30">{line.qtyDamaged || 0}</td>
-                    <td className="px-6 py-3 text-center font-bold text-slate-600 bg-slate-50/50">{line.qtyScrapped || 0}</td>
-                  </>
-                ) : (
-                  <td colSpan={4} className="px-6 py-3 text-center text-slate-400 italic">Chưa QC</td>
-                )}
-              </tr>
-            ))}
           </tbody>
         </table>
       </div>
@@ -410,7 +341,6 @@ const CustomerReturnDetailPage = () => {
   const tabItems = [
     { key: 'general', label: 'Thông tin chung', children: renderGeneralInfo() },
     { key: 'products', label: 'Sản phẩm trả', children: renderProducts() },
-    { key: 'qc', label: 'QC / Phân loại', children: renderQCAllocations() },
     { key: 'stock_impact', label: 'Stock Impact', children: renderStockImpact() },
     { key: 'attachments', label: 'Attachments', children: renderAttachments() },
     { key: 'audit_log', label: 'Audit Log', children: renderAuditLog() },
@@ -475,20 +405,20 @@ const CustomerReturnDetailPage = () => {
               <Package size={18} /> Bắt đầu nhận hàng
             </button>
           )}
-          {returnOrder.status === ReturnStatus.Receiving && !returnOrder.inspectedAt && (
-            <button 
-              onClick={handleOpenInspectModal}
-              className="bg-purple-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center gap-2 shadow-sm"
-            >
-              <ShieldCheck size={18} /> Kiểm tra chất lượng (QC)
-            </button>
-          )}
           {(returnOrder.status === ReturnStatus.QC || returnOrder.status === ReturnStatus.Disposition || returnOrder.status === ReturnStatus.Putaway) && returnOrder.inspectedAt && (
             <button 
               onClick={handleComplete}
               className="bg-green-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center gap-2 shadow-sm"
             >
               <CheckCircle size={18} /> Hoàn thành
+            </button>
+          )}
+          {returnOrder.status === ReturnStatus.Completed && (
+            <button 
+              onClick={handleClose}
+              className="bg-slate-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-slate-700 transition-colors flex items-center gap-2 shadow-sm"
+            >
+              <CheckCircle size={18} /> Đóng phiếu
             </button>
           )}
         </div>
@@ -550,77 +480,6 @@ const CustomerReturnDetailPage = () => {
                       value={receiveData[line.id] || 0}
                       onChange={val => setReceiveData({ ...receiveData, [line.id]: val || 0 })}
                       className="w-24"
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Modal>
-
-      {/* Inspect Modal */}
-      <Modal
-        title="Phân loại chất lượng hàng (QC)"
-        open={isInspectModalOpen}
-        onOk={handleSubmitInspect}
-        onCancel={() => setIsInspectModalOpen(false)}
-        width={800}
-        okText="Xác nhận phân loại"
-        cancelText="Hủy"
-        okButtonProps={{ loading: inspectMutation.isPending, className: 'bg-primary' }}
-      >
-        <div className="py-4">
-          <div className="bg-purple-50 text-purple-800 p-3 rounded-lg text-sm mb-4 font-medium">
-            Phân bổ TẤT CẢ số lượng đã nhận ({returnOrder.lines?.reduce((sum, l) => sum + (l.qtyReceived || 0), 0) || 0}) vào các trạng thái QC.
-          </div>
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase font-medium">
-                <th className="px-2 py-2">Sản phẩm</th>
-                <th className="px-2 py-2 text-center text-green-600">Sellable</th>
-                <th className="px-2 py-2 text-center text-orange-600">Quarantine</th>
-                <th className="px-2 py-2 text-center text-red-600">Damaged</th>
-                <th className="px-2 py-2 text-center text-slate-600">Scrapped</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {returnOrder.lines?.map(line => (
-                <tr key={line.id}>
-                  <td className="px-2 py-3">
-                    <div className="font-medium text-sm">{line.productSku}</div>
-                    <div className="text-xs text-slate-500">Đã nhận: <span className="font-bold text-slate-800">{line.qtyReceived || 0}</span></div>
-                  </td>
-                  <td className="px-2 py-3 text-center">
-                    <InputNumber
-                      min={0}
-                      value={inspectData[line.id]?.qtySellable || 0}
-                      onChange={val => setInspectData({ ...inspectData, [line.id]: { ...inspectData[line.id], qtySellable: val || 0 } })}
-                      className="w-20"
-                    />
-                  </td>
-                  <td className="px-2 py-3 text-center">
-                    <InputNumber
-                      min={0}
-                      value={inspectData[line.id]?.qtyQuarantined || 0}
-                      onChange={val => setInspectData({ ...inspectData, [line.id]: { ...inspectData[line.id], qtyQuarantined: val || 0 } })}
-                      className="w-20"
-                    />
-                  </td>
-                  <td className="px-2 py-3 text-center">
-                    <InputNumber
-                      min={0}
-                      value={inspectData[line.id]?.qtyDamaged || 0}
-                      onChange={val => setInspectData({ ...inspectData, [line.id]: { ...inspectData[line.id], qtyDamaged: val || 0 } })}
-                      className="w-20"
-                    />
-                  </td>
-                  <td className="px-2 py-3 text-center">
-                    <InputNumber
-                      min={0}
-                      value={inspectData[line.id]?.qtyScrapped || 0}
-                      onChange={val => setInspectData({ ...inspectData, [line.id]: { ...inspectData[line.id], qtyScrapped: val || 0 } })}
-                      className="w-20"
                     />
                   </td>
                 </tr>

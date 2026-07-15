@@ -68,6 +68,10 @@ export const operationsApi = {
     const res = await httpClient.post<any, ApiResponse<any>>(`/api/returns/customer/${id}/complete`);
     return unwrapResult(res);
   },
+  closeReturnOrder: async (id: number) => {
+    const res = await httpClient.post<any, ApiResponse<any>>(`/api/returns/customer/${id}/close`);
+    return unwrapResult(res);
+  },
 
 
   // Transfer Endpoints
