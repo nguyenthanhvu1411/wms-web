@@ -73,9 +73,8 @@ const PurchaseOrderListPage = () => {
     {
       header: 'Trạng Thái',
       cell: (item: PurchaseOrder) => {
-        const label = purchaseOrderStatusLabel[item.status as keyof typeof purchaseOrderStatusLabel] || 'Unknown';
-
-        return <StatusBadge status={label} />;
+        const label = purchaseOrderStatusLabel[item.status as keyof typeof purchaseOrderStatusLabel];
+        return <StatusBadge status={item.status} text={label} />;
       },
     },
     {

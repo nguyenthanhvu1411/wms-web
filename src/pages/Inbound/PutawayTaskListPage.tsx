@@ -81,8 +81,8 @@ const PutawayTaskListPage = () => {
     {
       header: 'Trạng thái',
       cell: (item: PutawayTask) => {
-        const label = putawayStatusLabel[item.status as PutawayStatus] || 'Unknown';
-        return <StatusBadge status={label} />;
+        const label = putawayStatusLabel[item.status as PutawayStatus];
+        return <StatusBadge status={item.status} text={label} />;
       },
     },
     {

@@ -54,7 +54,7 @@ const QualityCheckListPage = () => {
     {
       header: 'Người kiểm tra',
       accessorKey: 'inspectorId' as keyof QualityCheck,
-      cell: (item: QualityCheck) => item.inspectorId || '-',
+      cell: (item: QualityCheck) => item.inspectorName ? `${item.inspectorName} (${item.inspectorId})` : (item.inspectorId || '-'),
     },
     {
       header: 'Ngày kiểm tra',
@@ -63,8 +63,8 @@ const QualityCheckListPage = () => {
     {
       header: 'Kết quả',
       cell: (item: QualityCheck) => {
-        const label = qualityCheckResultLabel[item.result as QualityCheckResult] || 'Unknown';
-        return <StatusBadge status={label} />;
+        const label = qualityCheckResultLabel[item.result as QualityCheckResult];
+        return <StatusBadge status={item.result} text={label} />;
       },
     },
     {

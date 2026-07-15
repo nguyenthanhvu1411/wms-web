@@ -17,12 +17,11 @@ const GoodsReceiptDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'overview' | 'lines' | 'attachments' | 'audit'>('lines');
+  const [activeTab, setActiveTab] = useState<'overview' | 'lines' | 'audit'>('lines');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editForm, setEditForm] = useState({ notes: '', vehiclePlate: '', driverName: '' });
+  const [editForm, setEditForm] = useState({ notes: '', vehiclePlate: '', driverName: '', receivedBy: '' });
   
-  // Modals state (converted to expanded row for cards)
-  const [expandedRow, setExpandedRow] = useState<number | null>(null);
+
 
   const { register, control, handleSubmit, reset, watch, setValue, formState: { isDirty } } = useForm<ConfirmGoodsReceiptRequest>({
     defaultValues: {
@@ -58,6 +57,7 @@ const GoodsReceiptDetailPage = () => {
     if (gr && gr.lines && !isDirty) {
       reset({
         receivedDate: new Date().toISOString().slice(0, 16),
+        receivedBy: '',
         lines: gr.lines.map(line => ({
           goodsReceiptLineId: line.id,
           qtyReceived: line.qtyExpected, 
@@ -128,7 +128,8 @@ const GoodsReceiptDetailPage = () => {
       setEditForm({
         notes: gr.notes || '',
         vehiclePlate: gr.vehiclePlate || '',
-        driverName: gr.driverName || ''
+        driverName: gr.driverName || '',
+        receivedBy: gr.receivedBy || ''
       });
       setIsEditModalOpen(true);
     }
@@ -183,7 +184,7 @@ const GoodsReceiptDetailPage = () => {
     );
   }
 
-  const canEditGr = gr.status === GoodsReceiptStatus.Draft;
+  const canEditGr = gr.status !== GoodsReceiptStatus.Cancelled;
   const canStartReceiving = gr.status === GoodsReceiptStatus.Draft;
   const canConfirmReceiving = gr.status === GoodsReceiptStatus.InProgress;
   const canCancelGr = gr.status === GoodsReceiptStatus.Draft || gr.status === GoodsReceiptStatus.InProgress;
@@ -260,7 +261,7 @@ const GoodsReceiptDetailPage = () => {
           </div>
           <div>
             <span className="text-text-secondary block mb-1">Người nhận</span>
-            <span className="font-medium flex items-center gap-2"><User size={14} className="text-primary"/> {gr.receivedBy || 'Admin'}</span>
+            <span className="font-medium flex items-center gap-2"><User size={14} className="text-primary"/> {gr.receivedBy || 'N/A'}</span>
           </div>
 
           <div>
@@ -293,13 +294,7 @@ const GoodsReceiptDetailPage = () => {
               Chi tiết nhận hàng <span className="bg-bg-secondary text-text-primary px-2 py-0.5 rounded-full text-xs">{gr.lines?.length || 0}</span>
               {activeTab === 'lines' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></div>}
             </button>
-            <button
-              onClick={() => setActiveTab('attachments')}
-              className={`pb-3 font-medium transition-colors relative flex items-center gap-2 ${activeTab === 'attachments' ? 'text-primary' : 'text-text-secondary hover:text-text-primary'}`}
-            >
-              <Paperclip size={16}/> Tài liệu đính kèm
-              {activeTab === 'attachments' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary"></div>}
-            </button>
+
             <button
               onClick={() => setActiveTab('audit')}
               className={`pb-3 font-medium transition-colors relative flex items-center gap-2 ${activeTab === 'audit' ? 'text-primary' : 'text-text-secondary hover:text-text-primary'}`}
@@ -325,7 +320,8 @@ const GoodsReceiptDetailPage = () => {
                       <th className="px-4 py-3 font-medium text-text-secondary text-right">Còn lại</th>
                       <th className="px-4 py-3 font-medium text-text-secondary text-center">Yêu cầu QC</th>
                       <th className="px-4 py-3 font-medium text-text-secondary">Vị trí</th>
-                      <th className="px-4 py-3 font-medium text-text-secondary">Lô & Serial</th>
+                      <th className="px-4 py-3 font-medium text-text-secondary min-w-[140px]">Lô SX & Hạn SD</th>
+                      <th className="px-4 py-3 font-medium text-text-secondary min-w-[140px]">Serial</th>
                       <th className="px-4 py-3 font-medium text-text-secondary">Trạng thái</th>
                     </tr>
                   </thead>
@@ -383,15 +379,29 @@ const GoodsReceiptDetailPage = () => {
                           <td className="px-4 py-3 text-text-secondary">
                             {line.suggestedLocation || 'N/A'} {line.suggestedLocation && <span className="text-xs bg-bg-secondary px-1 rounded ml-1">Đề xuất</span>}
                           </td>
-                          <td className="px-4 py-3 space-y-2">
-                            {trackLot || trackSerial ? (
-                              <button
-                                type="button"
-                                onClick={() => setExpandedRow(expandedRow === index ? null : index)}
-                                className={`text-xs px-3 py-1.5 border rounded-lg flex items-center gap-1 transition-colors ${expandedRow === index ? 'bg-primary/10 border-primary text-primary' : 'bg-bg-secondary border-border hover:bg-bg-tertiary'}`}
-                              >
-                                {expandedRow === index ? 'Đóng chi tiết' : 'Nhập Lot/Serial'}
-                              </button>
+                          <td className="px-4 py-3">
+                            {trackLot ? (
+                              <div className="space-y-2">
+                                <input type="text" {...register(`lines.${index}.lotNumber`)} disabled={!isDraftOrReceiving} className="w-full min-w-[100px] px-2 py-1 text-xs border border-border rounded outline-none focus:border-primary disabled:bg-bg-secondary" placeholder="Số lô..." />
+                                <input type="date" {...register(`lines.${index}.expiryDate`)} disabled={!isDraftOrReceiving} className="w-full min-w-[100px] px-2 py-1 text-xs border border-border rounded outline-none focus:border-primary disabled:bg-bg-secondary" title="Hạn sử dụng" />
+                              </div>
+                            ) : (
+                              <span className="text-text-secondary opacity-50">-</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            {trackSerial ? (
+                              isDraftOrReceiving ? (
+                                <textarea
+                                  {...register(`lines.${index}.serialNumbersStr` as any)}
+                                  className="w-full min-w-[100px] h-[52px] px-2 py-1 text-xs border border-border rounded outline-none focus:border-primary resize-none disabled:bg-bg-secondary"
+                                  placeholder="Nhập Serial (cách nhau bởi dấu phẩy hoặc xuống dòng)..."
+                                />
+                              ) : (
+                                <div className="text-xs text-text-secondary max-h-[52px] overflow-y-auto max-w-[150px]">
+                                  {(line as any).serialNumbers?.join(', ') || '-'}
+                                </div>
+                              )
                             ) : (
                               <span className="text-text-secondary opacity-50">-</span>
                             )}
@@ -405,72 +415,6 @@ const GoodsReceiptDetailPage = () => {
                             </span>
                           </td>
                         </tr>
-                        {/* Expanded Row Content for Collapse/Card UI */}
-                        {expandedRow === index && (trackLot || trackSerial) && (
-                          <tr className="bg-background-hover/50 border-b border-border transition-all duration-300">
-                            <td colSpan={11} className="p-0">
-                              <div className="p-6 border-l-4 border-primary grid grid-cols-1 xl:grid-cols-2 gap-6">
-                                {trackLot && (
-                                  <div className="bg-white rounded-xl shadow-sm border border-border p-5">
-                                    <h4 className="font-semibold text-text-primary mb-4 flex items-center gap-2 border-b border-border pb-2">
-                                      <Package size={16} className="text-primary"/> Lot Information
-                                    </h4>
-                                    <div className="space-y-4">
-                                      <div>
-                                        <label className="block text-sm font-medium text-text-secondary mb-1">Mã Lô (Lot Number)</label>
-                                        <div className="flex gap-2">
-                                          <input type="text" {...register(`lines.${index}.lotNumber`)} disabled={!isDraftOrReceiving} className="flex-1 px-3 py-2 border border-border rounded-lg outline-none focus:border-primary disabled:bg-bg-secondary text-sm" placeholder="Nhập số lô..." />
-                                          {isDraftOrReceiving && (
-                                            <button type="button" onClick={() => setValue(`lines.${index}.lotNumber`, `LOT-${new Date().getTime().toString().slice(-6)}`)} className="px-3 bg-bg-secondary border border-border rounded-lg text-sm hover:bg-bg-tertiary">Tự động</button>
-                                          )}
-                                        </div>
-                                      </div>
-                                      <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                          <label className="block text-sm font-medium text-text-secondary mb-1">NSX (MFG Date)</label>
-                                          <input type="date" {...register(`lines.${index}.manufactureDate`)} disabled={!isDraftOrReceiving} className="w-full px-3 py-2 border border-border rounded-lg outline-none focus:border-primary disabled:bg-bg-secondary text-sm" />
-                                        </div>
-                                        <div>
-                                          <label className="block text-sm font-medium text-text-secondary mb-1">HSD (EXP Date)</label>
-                                          <input type="date" {...register(`lines.${index}.expiryDate`)} disabled={!isDraftOrReceiving} className="w-full px-3 py-2 border border-border rounded-lg outline-none focus:border-primary disabled:bg-bg-secondary text-sm" />
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                                
-                                {trackSerial && (
-                                  <div className="bg-white rounded-xl shadow-sm border border-border p-5">
-                                    <h4 className="font-semibold text-text-primary mb-4 flex items-center gap-2 border-b border-border pb-2 justify-between">
-                                      <div className="flex items-center gap-2">
-                                        <Barcode size={16} className="text-primary"/> Serial Information
-                                      </div>
-                                      <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded">
-                                        {serialCount} / {currentReceiving} Đã quét
-                                      </span>
-                                    </h4>
-                                    <div className="space-y-4">
-                                      {isDraftOrReceiving ? (
-                                        <>
-                                          <p className="text-xs text-text-secondary">Quét hoặc dán danh sách mã Serial (ngăn cách bằng dấu phẩy hoặc dòng mới):</p>
-                                          <textarea
-                                            {...register(`lines.${index}.serialNumbersStr` as any)}
-                                            className="w-full h-32 px-4 py-3 bg-white border border-border rounded-lg text-sm focus:outline-none focus:border-primary resize-none"
-                                            placeholder="SN001&#10;SN002&#10;SN003"
-                                          />
-                                        </>
-                                      ) : (
-                                        <div className="text-sm text-text-secondary max-h-32 overflow-y-auto p-3 bg-bg-secondary rounded-lg border border-border">
-                                          {(line as any).serialNumbers?.join(', ') || 'Không có dữ liệu serial'}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        )}
                       </React.Fragment>
                       );
                     })}
@@ -480,19 +424,7 @@ const GoodsReceiptDetailPage = () => {
             </div>
           )}
 
-          {/* Tab: Attachments */}
-          {activeTab === 'attachments' && (
-            <div className="bg-white rounded-xl shadow-sm border border-border p-6 flex flex-col items-center justify-center min-h-[300px]">
-              <div className="w-16 h-16 bg-bg-secondary rounded-full flex items-center justify-center mb-4 text-text-secondary">
-                <Paperclip size={32} />
-              </div>
-              <h3 className="text-lg font-medium text-text-primary mb-2">Chưa có tài liệu đính kèm</h3>
-              <p className="text-text-secondary text-sm mb-4">Tải lên phiếu giao hàng, hóa đơn hoặc danh sách đóng gói tại đây.</p>
-              <button className="px-4 py-2 bg-bg-secondary border border-border rounded-lg text-sm font-medium hover:bg-bg-tertiary">
-                Tải lên tệp
-              </button>
-            </div>
-          )}
+
 
           {/* Tab: Audit Logs */}
           {activeTab === 'audit' && (
@@ -609,6 +541,10 @@ const GoodsReceiptDetailPage = () => {
               <button onClick={() => setIsEditModalOpen(false)} className="text-text-secondary hover:text-text-primary"><XCircle size={20} /></button>
             </div>
             <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">Người nhận</label>
+                <input type="text" placeholder="Tên nhân viên kho nhận hàng..." value={editForm.receivedBy} onChange={(e) => setEditForm(prev => ({ ...prev, receivedBy: e.target.value }))} className="w-full px-4 py-2 border border-border rounded-lg outline-none focus:border-primary"/>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-1">Ghi chú</label>
                 <textarea value={editForm.notes} onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))} className="w-full px-4 py-2 border border-border rounded-lg outline-none focus:border-primary resize-none" rows={3}/>

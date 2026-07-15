@@ -74,8 +74,8 @@ const GoodsReceiptListPage = () => {
     {
       header: 'Trạng Thái',
       cell: (item: GoodsReceipt) => {
-        const label = goodsReceiptStatusLabel[item.status as keyof typeof goodsReceiptStatusLabel] || 'Unknown';
-        return <StatusBadge status={label} />;
+        const label = goodsReceiptStatusLabel[item.status as keyof typeof goodsReceiptStatusLabel];
+        return <StatusBadge status={item.status} text={label} />;
       },
     },
     {

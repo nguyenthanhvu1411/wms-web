@@ -34,7 +34,8 @@ const PutawayTaskDetailPage = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Lỗi khi hoàn tất cất hàng');
+      console.error('API Error:', error.response?.data || error);
+      toast.error(error.response?.data?.error || error.response?.data?.title || error.message || 'Lỗi khi hoàn tất cất hàng');
     }
   });
 
@@ -84,7 +85,7 @@ const PutawayTaskDetailPage = () => {
        }
     }
 
-    completeMutation.mutate({ qtyPutaway, notes, putawaySerials });
+    completeMutation.mutate({ qtyPutaway, notes, serialNumbers: putawaySerials } as any);
   };
 
   return (

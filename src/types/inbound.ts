@@ -157,6 +157,7 @@ export interface QualityCheck {
   warehouseId: number;
   result: number;
   inspectorId?: string;
+  inspectorName?: string;
   inspectedAt?: string;
   methodUsed?: string;
   notes?: string;

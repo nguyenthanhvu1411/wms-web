@@ -101,7 +101,7 @@ export const MasterDataSelect: React.FC<MasterDataSelectProps> = ({
 
   const loadOptions = async (inputValue: string): Promise<SelectOption[]> => {
     try {
-      const params = { keyword: inputValue, pageIndex: 1, pageSize: 20 };
+      const params = { keyword: inputValue, search: inputValue, pageIndex: 1, pageSize: 20 };
       let options: SelectOption[] = [];
 
       switch (type) {

@@ -71,8 +71,8 @@ const AdvanceShippingNoticeListPage = () => {
     {
       header: 'Trạng Thái',
       cell: (item: AdvanceShippingNotice) => {
-        const label = asnStatusLabel[item.status as keyof typeof asnStatusLabel] || 'Unknown';
-        return <StatusBadge status={label} />;
+        const label = asnStatusLabel[item.status as keyof typeof asnStatusLabel];
+        return <StatusBadge status={item.status} text={label} />;
       },
     },
     {

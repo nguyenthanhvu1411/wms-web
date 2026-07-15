@@ -23,11 +23,24 @@ const UserManagementPage = () => {
   const users = useMemo(() => queryData?.items || [], [queryData]);
   const totalCount = queryData?.totalCount || 0;
 
+  const roleLabelMap: Record<number | string, string> = {
+    1: 'Quản trị hệ thống (Admin)',
+    2: 'Quản lý kho (Warehouse Manager)',
+    3: 'Giám sát vận hành (Supervisor)',
+    4: 'Nhân viên (Staff)',
+    5: 'Chỉ xem (Viewer)',
+    'Admin': 'Quản trị hệ thống (Admin)',
+    'WarehouseManager': 'Quản lý kho (Warehouse Manager)',
+    'Supervisor': 'Giám sát vận hành (Supervisor)',
+    'Staff': 'Nhân viên (Staff)',
+    'Viewer': 'Chỉ xem (Viewer)'
+  };
+
   const columns = [
     { header: 'Username', accessorKey: 'username' as keyof User, className: 'font-mono text-primary font-medium' },
     { header: 'Họ tên', accessorKey: 'fullName' as keyof User, className: 'font-medium text-text-primary' },
     { header: 'Email', accessorKey: 'email' as keyof User },
-    { header: 'Vai trò', accessorKey: 'role' as keyof User },
+    { header: 'Vai trò', accessorKey: 'role' as keyof User, cell: (item: User) => <span className="font-medium text-text-secondary">{roleLabelMap[item.role as any] || item.role}</span> },
     { header: 'Đăng nhập cuối', accessorKey: 'lastLoginAt' as keyof User, cell: (item: User) => item.lastLoginAt ? new Date(item.lastLoginAt).toLocaleString('vi-VN') : '-' },
     { header: 'Khóa', cell: (item: User) => item.isLocked ? <span className="text-danger font-medium">Đã khóa</span> : <span className="text-success font-medium">Bình thường</span> },
     { header: 'Trạng thái', cell: (item: User) => <StatusBadge status={item.isActive ? 'Active' : 'Inactive'} /> },

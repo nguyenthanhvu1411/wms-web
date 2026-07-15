@@ -100,6 +100,7 @@ export interface ConfirmGoodsReceiptLineRequest {
 
 export interface ConfirmGoodsReceiptRequest {
   receivedDate?: string;
+  receivedBy?: string;
   lines: ConfirmGoodsReceiptLineRequest[];
 }
 
@@ -148,6 +149,12 @@ export interface CompleteQualityCheckRequest {
   notes?: string;
   rejectReason?: string;
   lines: CompleteQualityCheckLineRequest[];
+}
+
+export interface UpdateQualityCheckMetadataRequest {
+  inspectorId?: string;
+  inspectedAt?: string;
+  methodUsed?: string;
 }
 
 export interface ProcessQualityCheckFailedRequest {
@@ -306,6 +313,11 @@ export const inboundApi = {
 
   completeQualityCheck: async (id: number, data: CompleteQualityCheckRequest) => {
     const res = await httpClient.post<any, ApiResult<boolean>>(`/api/inbound/quality-checks/${id}/complete`, data);
+    return unwrapResult(res);
+  },
+
+  updateQualityCheckMetadata: async (id: number, data: UpdateQualityCheckMetadataRequest) => {
+    const res = await httpClient.put<any, ApiResult<QualityCheck>>(`/api/inbound/quality-checks/${id}/metadata`, data);
     return unwrapResult(res);
   },
 

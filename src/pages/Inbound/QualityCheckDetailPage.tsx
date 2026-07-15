@@ -9,12 +9,15 @@ import { ArrowLeft, CheckCircle, Save, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { qualityCheckResultLabel, QualityCheckResult } from '@/types/wms-enums';
 import { format } from 'date-fns';
+import { EditQCMetadataModal } from './components/EditQCMetadataModal';
+import { Edit2 } from 'lucide-react';
 
 const QualityCheckDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'lines' | 'overview'>('lines');
+  const [isEditMetadataOpen, setIsEditMetadataOpen] = useState(false);
 
   const { register, control, handleSubmit, reset } = useForm<CompleteQualityCheckRequest>({
     defaultValues: {
@@ -375,9 +378,18 @@ const QualityCheckDetailPage = () => {
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl shadow-sm border border-border p-6">
-            <h3 className="font-semibold text-text-primary mb-4 border-b border-border pb-2">
-              Thông tin chung
-            </h3>
+            <div className="flex justify-between items-center mb-4 border-b border-border pb-2">
+              <h3 className="font-semibold text-text-primary">
+                Thông tin chung
+              </h3>
+              <button
+                onClick={() => setIsEditMetadataOpen(true)}
+                className="text-primary hover:bg-primary/10 p-1.5 rounded-lg transition-colors flex items-center gap-1 text-sm font-medium"
+              >
+                <Edit2 className="w-4 h-4" />
+                Sửa
+              </button>
+            </div>
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-2 text-sm border-b border-border/50 pb-3">
                 <span className="text-text-secondary">Mã GR</span>
@@ -387,7 +399,7 @@ const QualityCheckDetailPage = () => {
               </div>
               <div className="grid grid-cols-3 gap-2 text-sm border-b border-border/50 pb-3">
                 <span className="text-text-secondary">Người kiểm</span>
-                <span className="col-span-2 text-text-primary">{qc.inspectorId || '-'}</span>
+                <span className="col-span-2 text-text-primary">{qc.inspectorName ? `${qc.inspectorName} (${qc.inspectorId})` : (qc.inspectorId || '-')}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 text-sm border-b border-border/50 pb-3">
                 <span className="text-text-secondary">Ngày kiểm</span>
@@ -402,6 +414,14 @@ const QualityCheckDetailPage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {qc && (
+        <EditQCMetadataModal
+          qc={qc}
+          isOpen={isEditMetadataOpen}
+          onClose={() => setIsEditMetadataOpen(false)}
+        />
       )}
     </div>
   );
