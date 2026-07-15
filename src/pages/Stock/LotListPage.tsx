@@ -26,13 +26,13 @@ const LotListPage = () => {
         </span>
       ) 
     },
-    { header: 'Mã SKU', cell: (row: any) => row.productCode },
+    { header: 'Mã SKU', cell: (row: any) => row.productSku },
     { header: 'Tên Sản Phẩm', cell: (row: any) => row.productName },
     { header: 'Hạn Sử Dụng', cell: (row: any) => row.expiryDate ? new Date(row.expiryDate).toLocaleDateString('vi-VN') : '-' },
     { header: 'Kho', cell: (row: any) => row.warehouseCode },
     { header: 'Vị Trí', cell: (row: any) => row.locationCode },
-    { header: 'Tồn Thực Tế', cell: (row: any) => `${row.qtyOnHand} ${row.uomName}` },
-    { header: 'Khả Dụng', cell: (row: any) => `${row.qtyAvailable} ${row.uomName}` },
+    { header: 'Tồn Thực Tế', cell: (row: any) => `${row.qtyOnHand} ${row.uomCode}` },
+    { header: 'Khả Dụng', cell: (row: any) => `${row.qtyAvailable} ${row.uomCode}` },
   ];
 
   const handleSearch = (e: React.FormEvent) => {
