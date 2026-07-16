@@ -263,6 +263,38 @@ export interface ThreeWayMatchResponse {
   matchedBy?: string;
 }
 
+export interface VendorInvoice {
+  id: number;
+  invoiceNumber: string;
+  supplierId: number;
+  supplierName?: string;
+  purchaseOrderId: number;
+  poNumber?: string;
+  goodsReceiptId: number;
+  invoiceDate: string;
+  dueDate?: string;
+  currency: string;
+  subTotal: number;
+  taxAmount: number;
+  totalAmount: number;
+  status: number;
+  notes?: string;
+  lines?: VendorInvoiceLine[];
+}
+
+export interface VendorInvoiceLine {
+  id: number;
+  productId: number;
+  productSku: string;
+  productName: string;
+  uomId: number;
+  uomName: string;
+  qtyInvoiced: number;
+  unitPrice: number;
+  lineTotal: number;
+  notes?: string;
+}
+
 export interface PaymentRequestResponse {
   id: number;
   paymentRequestNumber: string;

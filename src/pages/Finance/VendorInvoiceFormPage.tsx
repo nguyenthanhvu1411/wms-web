@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inboundApi } from '@/api/inboundApi';
 import { masterDataApi } from '@/api/masterDataApi';
-import { ArrowLeft, Save, Plus, DollarSign } from 'lucide-react';
+import { ArrowLeft, Save, Plus, DollarSign, CheckCircle } from 'lucide-react';
 import { message, Spin } from 'antd';
 import { StatusBadge } from '@/components/StatusBadge/StatusBadge';
 import { VendorInvoiceStatus, vendorInvoiceStatusLabel } from '@/types/wms-enums';
@@ -35,6 +35,16 @@ const VendorInvoiceFormPage = () => {
       navigate('/finance/invoices');
     },
     onError: (err: any) => message.error(err.message || 'Lỗi khi tạo')
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: () => inboundApi.approveVendorInvoice(invoiceId),
+    onSuccess: () => {
+      message.success('Duyệt hóa đơn thành công');
+      queryClient.invalidateQueries({ queryKey: ['vendorInvoice', invoiceId] });
+      queryClient.invalidateQueries({ queryKey: ['vendorInvoices'] });
+    },
+    onError: (err: any) => message.error(err.message || 'Lỗi khi duyệt hóa đơn')
   });
 
   const [formData, setFormData] = useState<any>({
@@ -123,6 +133,17 @@ const VendorInvoiceFormPage = () => {
             </PermissionGuard>
           ) : (
             <>
+              {(status === VendorInvoiceStatus.Draft || status === VendorInvoiceStatus.Submitted) && (
+                <PermissionGuard permissions="VendorInvoice.Approve">
+                  <button
+                    onClick={() => approveMutation.mutate()}
+                    className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-2"
+                    disabled={approveMutation.isPending}
+                  >
+                    <CheckCircle size={18} /> {approveMutation.isPending ? 'ĐANG DUYỆT...' : 'DUYỆT HÓA ĐƠN'}
+                  </button>
+                </PermissionGuard>
+              )}
               {status === VendorInvoiceStatus.Matched && (
                 <PermissionGuard permissions="Finance.CreatePaymentRequest">
                   <button className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-2">
@@ -229,33 +250,42 @@ const VendorInvoiceFormPage = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase font-medium">
-                    <th className="px-4 py-3">Product ID</th>
+                    <th className="px-4 py-3">Sản phẩm</th>
                     <th className="px-4 py-3 text-right">Số lượng</th>
                     <th className="px-4 py-3 text-right">Đơn giá</th>
+                    <th className="px-4 py-3 text-right">Chiết khấu (%)</th>
                     <th className="px-4 py-3 text-right">Thuế (%)</th>
                     <th className="px-4 py-3 text-right">Thành tiền</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {formData.lines.map((line: any, index: number) => {
-                    const lineTotal = (line.qtyInvoiced * line.unitPrice) * (1 + line.taxPercent / 100);
+                    const netUnitPrice = line.unitPrice * (1 - (line.discountPercent || 0) / 100);
+                    const lineTotal = (line.qtyInvoiced * netUnitPrice) * (1 + (line.taxPercent || 0) / 100);
                     return (
                       <tr key={index} className="hover:bg-slate-50/50">
-                        <td className="px-4 py-2">
-                          <input
-                            type="number"
-                            className="w-full min-w-[100px] px-2 py-1.5 border border-slate-300 rounded focus:ring-1 focus:ring-primary disabled:bg-transparent disabled:border-transparent"
-                            value={line.productId || ''}
-                            onChange={e => handleUpdateLine(index, 'productId', Number(e.target.value))}
-                            disabled={isViewMode}
-                          />
+                        <td className="px-4 py-2 min-w-[300px]">
+                          {isViewMode ? (
+                            <div className="text-sm">
+                              <div className="font-medium text-slate-800">{line.product?.name || line.productName || `Product ID: ${line.productId}`}</div>
+                              {(line.product?.sku || line.sku) && <div className="text-xs text-slate-500">SKU: {line.product?.sku || line.sku}</div>}
+                            </div>
+                          ) : (
+                            <input
+                              type="number"
+                              className="w-full min-w-[100px] px-2 py-1.5 border border-slate-300 rounded focus:ring-1 focus:ring-primary disabled:bg-transparent disabled:border-transparent"
+                              value={line.productId || ''}
+                              onChange={e => handleUpdateLine(index, 'productId', Number(e.target.value))}
+                              disabled={isViewMode}
+                            />
+                          )}
                         </td>
                         <td className="px-4 py-2">
                           <input
                             type="number"
                             min="1"
-                            className="w-full min-w-[80px] px-2 py-1.5 border border-slate-300 rounded focus:ring-1 focus:ring-primary text-right disabled:bg-transparent disabled:border-transparent"
-                            value={line.qtyInvoiced || ''}
+                            className="w-full min-w-[80px] px-2 py-1.5 border border-slate-300 rounded focus:ring-1 focus:ring-primary text-right disabled:bg-transparent disabled:border-transparent disabled:text-slate-800"
+                            value={line.qtyInvoiced ?? 0}
                             onChange={e => handleUpdateLine(index, 'qtyInvoiced', Number(e.target.value))}
                             disabled={isViewMode}
                           />
@@ -263,8 +293,8 @@ const VendorInvoiceFormPage = () => {
                         <td className="px-4 py-2">
                           <input
                             type="number"
-                            className="w-full min-w-[100px] px-2 py-1.5 border border-slate-300 rounded focus:ring-1 focus:ring-primary text-right disabled:bg-transparent disabled:border-transparent"
-                            value={line.unitPrice || ''}
+                            className="w-full min-w-[100px] px-2 py-1.5 border border-slate-300 rounded focus:ring-1 focus:ring-primary text-right disabled:bg-transparent disabled:border-transparent disabled:text-slate-800"
+                            value={line.unitPrice ?? 0}
                             onChange={e => handleUpdateLine(index, 'unitPrice', Number(e.target.value))}
                             disabled={isViewMode}
                           />
@@ -272,8 +302,17 @@ const VendorInvoiceFormPage = () => {
                         <td className="px-4 py-2">
                           <input
                             type="number"
-                            className="w-full min-w-[80px] px-2 py-1.5 border border-slate-300 rounded focus:ring-1 focus:ring-primary text-right disabled:bg-transparent disabled:border-transparent"
-                            value={line.taxPercent || ''}
+                            className="w-full min-w-[80px] px-2 py-1.5 border border-slate-300 rounded focus:ring-1 focus:ring-primary text-right disabled:bg-transparent disabled:border-transparent disabled:text-slate-800"
+                            value={line.discountPercent ?? 0}
+                            onChange={e => handleUpdateLine(index, 'discountPercent', Number(e.target.value))}
+                            disabled={isViewMode}
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <input
+                            type="number"
+                            className="w-full min-w-[80px] px-2 py-1.5 border border-slate-300 rounded focus:ring-1 focus:ring-primary text-right disabled:bg-transparent disabled:border-transparent disabled:text-slate-800"
+                            value={line.taxPercent ?? 0}
                             onChange={e => handleUpdateLine(index, 'taxPercent', Number(e.target.value))}
                             disabled={isViewMode}
                           />
