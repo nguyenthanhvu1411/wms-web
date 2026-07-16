@@ -395,13 +395,13 @@ export const inboundApi = {
     const res = await httpClient.get<any, ApiResult<any>>(`/api/finance/invoices/${id}`);
     return unwrapResult(res);
   },
-  createVendorInvoice: async (data: CreateVendorInvoiceRequest) => {
-    const res = await httpClient.post<any, ApiResult<VendorInvoice>>('/api/finance/invoices', data);
+  createVendorInvoice: async (data: any) => {
+    const res = await httpClient.post<any, ApiResult<any>>('/api/finance/invoices', data);
     return unwrapResult(res);
   },
 
   approveVendorInvoice: async (id: number) => {
-    const res = await httpClient.post<any, ApiResult<VendorInvoice>>(`/api/finance/invoices/${id}/approve`);
+    const res = await httpClient.post<any, ApiResult<any>>(`/api/finance/invoices/${id}/approve`);
     return unwrapResult(res);
   },
   getThreeWayMatches: async (params?: any) => {
